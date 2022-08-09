@@ -3,9 +3,10 @@ use nom::{
     branch::alt,
     bytes::complete::{is_not, tag},
     character::complete::multispace0,
+    combinator::eof,
     error::ParseError,
     sequence::delimited,
-    IResult, combinator::eof,
+    IResult,
 };
 
 fn ws<'a, F: 'a, O, E: ParseError<&'a str>>(
@@ -20,16 +21,16 @@ where
 use crate::dpdb_core::statement::{Keyword, Statement};
 
 pub(crate) fn parse_sql(input: &str) -> IResult<&str, Statement> {
-    alt((parse_reset, parse_set, parse_get))(input)
+    alt((parse_clear, parse_set, parse_get, parse_reset))(input)
 }
 
-fn parse_reset(input: &str) -> IResult<&str, Statement> {
-    let (input, _) = ws(tag("reset"))(input)?;
+fn parse_clear(input: &str) -> IResult<&str, Statement> {
+    let (input, _) = ws(tag("clear"))(input)?;
     let (input, _) = eof(input)?;
     Ok((
         input,
         Statement {
-            verb: Keyword::Reset,
+            verb: Keyword::Clear,
             key: String::default(),
             value: String::default(),
         },
@@ -62,6 +63,21 @@ fn parse_get(input: &str) -> IResult<&str, Statement> {
         Statement {
             verb: Keyword::Get,
             key: key.to_string(),
+            value: Default::default(),
+        },
+    ))
+}
+
+fn parse_reset(input: &str) -> IResult<&str, Statement> {
+    let (input, _) = ws(tag("reset"))(input)?;
+    let (input, file) = ws(literal)(input)?;
+    let (input, _) = eof(input)?;
+
+    Ok((
+        input,
+        Statement {
+            verb: Keyword::Reset,
+            key: file.to_string(),
             value: Default::default(),
         },
     ))

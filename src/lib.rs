@@ -2,4 +2,4 @@
 //! 
 
 pub mod dpdb_core;
-pub use dpdb_core::handle_statement;
+pub use dpdb_core::Executor;

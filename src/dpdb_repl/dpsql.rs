@@ -1,4 +1,3 @@
-use dpdb::dpdb_core::handle_statement;
 use rustyline::error::ReadlineError;
 use rustyline::{Editor, Result};
 
@@ -8,12 +7,13 @@ fn main() -> Result<()> {
     if rl.load_history("history.txt").is_err() {
         println!("No previous history.");
     }
+    let mut executor = dpdb::Executor::default();
     loop {
         let readline = rl.readline(">> ");
         match readline {
             Ok(line) => {
                 rl.add_history_entry(line.as_str());
-                match handle_statement(&line) {
+                match executor.execute(&line) {
                     Ok(report) => {
                         if let Some(msg) = report.msg {
                             println!("=> {msg}");

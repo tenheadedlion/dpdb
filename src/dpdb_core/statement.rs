@@ -1,5 +1,6 @@
 #[derive(Debug)]
 pub(crate) enum Keyword {
+    Clear,
     Reset,
     Set,
     Get,
