@@ -25,3 +25,36 @@ filesystem failure
 => 2
 379.465µs
 ```
+
+## Benchmark
+
+### 1. Using a compact scheme to store data
+
+It shows that reading data with compact scheme is a lot slower.
+
+```shell
+write                   time:   [1.9642 ms 1.9818 ms 2.0020 ms]                   
+                        change: [-2.2815% -0.5789% +1.0794%] (p = 0.51 > 0.05)
+                        No change in performance detected.
+Found 10 outliers among 100 measurements (10.00%)
+  3 (3.00%) high mild
+  7 (7.00%) high severe
+
+read                    time:   [7.1030 ms 7.1104 ms 7.1181 ms]                 
+                        change: [+2299.5% +2306.2% +2312.9%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 3 outliers among 100 measurements (3.00%)
+  1 (1.00%) low mild
+  2 (2.00%) high mild
+```
+
+### 0. Store data line by line
+
+```shell
+write                   time:   [1.9689 ms 1.9942 ms 2.0240 ms]                   
+Found 10 outliers among 100 measurements (10.00%)
+  1 (1.00%) high mild
+  9 (9.00%) high severe
+
+read                    time:   [294.32 µs 295.02 µs 295.86 µs]                 
+```

@@ -12,3 +12,10 @@ nom = "7"
 [[bin]]
 name = "dpsql"
 path = "src/dpdb_repl/dpsql.rs"
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "dpdb"
+harness = false
