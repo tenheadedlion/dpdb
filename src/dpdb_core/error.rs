@@ -1,4 +1,4 @@
-use std::result::Result as StdResult;
+use std::{result::Result as StdResult, array::TryFromSliceError};
 
 pub type Result<T, E = Error> = StdResult<T, E>;
 
@@ -55,3 +55,12 @@ impl From<std::str::Utf8Error> for Error {
         }
     }
 }
+
+impl From<TryFromSliceError> for Error {
+    fn from(_: TryFromSliceError) -> Self {
+        Error {
+            kind: ErrorKind::Parser,
+        }
+    }
+}
+

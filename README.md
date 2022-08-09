@@ -28,6 +28,24 @@ filesystem failure
 
 ## Benchmark
 
+### 2. Reduce the occurrence of filesystem reads
+
+Each key-value pair loading requires at least calling `read_exact` twice, there is room for further improvement, for example, read a lot of bytes at once, below some threshold,  but that is not the point, the point is using index to reduce the number of filesystem calls to one.
+
+```shell
+write                   time:   [1.9464 ms 1.9681 ms 1.9946 ms]
+Found 8 outliers among 100 measurements (8.00%)
+  3 (3.00%) high mild
+  5 (5.00%) high severe
+
+Benchmarking read: Collecting 100 samples in estimated 5.0639 s (2400 iteration                                                                               read                    time:   [2.1284 ms 2.1339 ms 2.1396 ms]
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+```
+
+![](resources/flamegraph_2.svg)
+
+
 ### 1. Using a compact scheme to store data
 
 Reading data with compact scheme is a lot slower. The flamegraphs shows that `_GI__libc_read` occupied too much CPU time.
