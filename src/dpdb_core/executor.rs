@@ -13,11 +13,14 @@ pub(crate) fn execute(statement: Statement) -> Result<Report> {
     let now = Instant::now();
     let msg = match statement.verb {
         Keyword::Reset => filesystem::reset()?,
-        Keyword::Set => filesystem::set(&statement.key, &statement.value)?,
-        Keyword::Get => filesystem::get(&statement.key)?,
+        Keyword::Set => filesystem::set(statement.key.as_bytes(), statement.value.as_bytes())?,
+        Keyword::Get => filesystem::get(statement.key.as_bytes())?,
     };
     Ok(Report {
         time_elapsed: now.elapsed(),
-        msg,
+        msg: match msg {
+            Some(msg) => Some(std::str::from_utf8(&msg)?.to_string()),
+            None => None
+        }
     })
 }

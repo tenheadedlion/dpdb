@@ -11,13 +11,24 @@ pub struct Error {
 pub enum ErrorKind {
     Parser,
     IO,
+    Display,
 }
 
 impl std::error::Error for Error {}
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "invalid operation")
+        match self.kind {
+            ErrorKind::Parser => {
+                write!(f, "invalid sql")
+            }
+            ErrorKind::IO => {
+                write!(f, "filesystem failure")
+            }
+            ErrorKind::Display => {
+                write!(f, "display error")
+            }
+        }
     }
 }
 
@@ -33,6 +44,14 @@ impl From<std::io::Error> for Error {
     fn from(_: std::io::Error) -> Self {
         Error {
             kind: ErrorKind::IO,
+        }
+    }
+}
+
+impl From<std::str::Utf8Error> for Error {
+    fn from(_: std::str::Utf8Error) -> Self {
+        Error {
+            kind: ErrorKind::Display,
         }
     }
 }

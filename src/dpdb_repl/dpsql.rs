@@ -16,7 +16,7 @@ fn main() -> Result<()> {
                 match handle_statement(&line) {
                     Ok(report) => {
                         if let Some(msg) = report.msg {
-                            println!("{msg}");
+                            println!("=> {msg}");
                         }
                         println!("{:?}", report.time_elapsed);
                     }
