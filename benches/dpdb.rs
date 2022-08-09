@@ -1,6 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use dpdb::Executor;
 
+use pprof::criterion::{Output, PProfProfiler};
+
 pub fn write(c: &mut Criterion) {
     let mut executor = Executor::default();
     let _ = executor.execute("reset /media/root_/SLC16/bench.db");
@@ -13,10 +15,15 @@ pub fn write(c: &mut Criterion) {
 pub fn read(c: &mut Criterion) {
     let mut executor = Executor::default();
     c.bench_function("read", |b| {
-        b.iter(|| executor.execute(black_box("get needle")))
+        b.iter(|| {
+            let _ = executor.execute(black_box("get needle"));
+        })
     });
     let _ = executor.execute("clear");
 }
 
-criterion_group!(name = benches; config = Criterion::default(); targets = write, read);
+criterion_group!(
+    name = benches; 
+    config = Criterion::default().with_profiler(PProfProfiler::new(100, Output::Flamegraph(None))); 
+    targets = write, read);
 criterion_main!(benches);

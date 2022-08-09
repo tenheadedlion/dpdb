@@ -30,7 +30,7 @@ filesystem failure
 
 ### 1. Using a compact scheme to store data
 
-It shows that reading data with compact scheme is a lot slower.
+Reading data with compact scheme is a lot slower. The flamegraphs shows that `_GI__libc_read` occupied too much CPU time.
 
 ```shell
 write                   time:   [1.9642 ms 1.9818 ms 2.0020 ms]                   
@@ -48,6 +48,8 @@ Found 3 outliers among 100 measurements (3.00%)
   2 (2.00%) high mild
 ```
 
+![](resources/flamegraph_1.svg)
+
 ### 0. Store data line by line
 
 ```shell
@@ -58,3 +60,5 @@ Found 10 outliers among 100 measurements (10.00%)
 
 read                    time:   [294.32 µs 295.02 µs 295.86 µs]                 
 ```
+
+![](resources/flamegraph_0.svg)
