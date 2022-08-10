@@ -9,6 +9,7 @@ edition = "2021"
 rustyline = "10.0.0"
 nom = "7"
 pprof = { version = "0.10", features = ["flamegraph", "criterion"] }
+#tokio = { version = "1", features = ["full"] }
 
 [[bin]]
 name = "dpsql"

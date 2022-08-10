@@ -1,8 +1,9 @@
-use crate::dpdb_core::{Result};
+use crate::dpdb_core::Result;
 use std::collections::HashMap;
 use std::fs::{remove_file, File, OpenOptions};
 use std::io::{prelude::*, SeekFrom};
 
+use super::utils::eq_u8;
 use super::{Error, ErrorKind};
 
 pub struct Storage {
@@ -59,12 +60,13 @@ impl Storage {
         Ok(None)
     }
 
-    pub fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+    pub fn get(&mut self, key: &[u8]) -> Result<Option<Vec<u8>>> {
         let mut db = File::open(&self.file)?;
-        let offset = self.index.get(key).ok_or(Error {
-            kind: ErrorKind::Key,
-        })?;
-        db.seek(SeekFrom::Start(*offset))?;
+        let offset = self.index.get(key);
+        match offset {
+            Some(offset) => db.seek(SeekFrom::Start(*offset))?,
+            None => return self.scan_for_key(key),
+        };
 
         let mut pair_meta = [0u8; std::mem::size_of::<usize>() * 2];
         if db.read_exact(&mut pair_meta).is_err() {
@@ -77,5 +79,29 @@ impl Storage {
         //let key_loaded = &pair_loaded[..key_len];
         let value_loaded = &pair_loaded[key_len..(key_len + value_len)];
         Ok(Some(value_loaded.to_vec()))
+    }
+
+    pub fn scan_for_key(&mut self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        let mut db = File::open(&self.file)?;
+        loop {
+            let mut pair_meta = [0u8; 16];
+            if db.read_exact(&mut pair_meta).is_err() {
+                return Err(Error {
+                    kind: ErrorKind::Key,
+                });
+            }
+            let key_len = usize::from_be_bytes(pair_meta[..8].try_into()?);
+            let value_len = usize::from_be_bytes(pair_meta[8..16].try_into()?);
+            let mut pair_loaded: Vec<u8> = vec![0u8; key_len + value_len];
+            db.read_exact(&mut pair_loaded)?;
+            let key_loaded = &pair_loaded[..key_len];
+            let value_loaded = &pair_loaded[key_len..(key_len + value_len)];
+            let offset = db.stream_position()?
+                    - ((std::mem::size_of::<usize>() * 2 + key_len + value_len) as u64);
+                self.index.insert(key.to_vec(), offset);
+            if eq_u8(key, key_loaded) {
+                return Ok(Some(value_loaded.to_vec()));
+            }
+        }
     }
 }

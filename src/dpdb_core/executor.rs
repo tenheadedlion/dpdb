@@ -49,4 +49,7 @@ impl Executor {
             },
         })
     }
+    pub fn merge(&mut self) {
+        
+    }
 }
