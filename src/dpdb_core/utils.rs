@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 pub(crate) fn eq_u8(lhs: &[u8], rhs: &[u8]) -> bool {
     if lhs.len() != rhs.len() {
         return false;

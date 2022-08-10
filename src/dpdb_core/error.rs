@@ -12,6 +12,7 @@ pub enum ErrorKind {
     Parser,
     IO,
     Display,
+    Key,
 }
 
 impl std::error::Error for Error {}
@@ -27,6 +28,9 @@ impl std::fmt::Display for Error {
             }
             ErrorKind::Display => {
                 write!(f, "display error")
+            }
+            ErrorKind::Key => {
+                write!(f, "no value for the key")
             }
         }
     }
