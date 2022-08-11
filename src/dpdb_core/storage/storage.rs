@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use std::fs::{remove_file, File, OpenOptions};
 use std::io::{prelude::*, SeekFrom};
 
-use super::utils::eq_u8;
-use super::{Error, ErrorKind};
+use crate::utils::eq_u8;
+use crate::{Error, ErrorKind};
 
 static MAGIC: &[u8] = "dpdb-feff-1234-1".as_bytes();
 pub struct Storage {
