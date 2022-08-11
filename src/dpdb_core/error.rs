@@ -1,4 +1,4 @@
-use std::{result::Result as StdResult, array::TryFromSliceError};
+use std::{array::TryFromSliceError, result::Result as StdResult};
 
 pub type Result<T, E = Error> = StdResult<T, E>;
 
@@ -13,6 +13,7 @@ pub enum ErrorKind {
     IO,
     Display,
     Key,
+    File,
 }
 
 impl std::error::Error for Error {}
@@ -31,6 +32,9 @@ impl std::fmt::Display for Error {
             }
             ErrorKind::Key => {
                 write!(f, "no value for the key")
+            }
+            ErrorKind::File => {
+                write!(f, "wrong file")
             }
         }
     }
@@ -67,4 +71,3 @@ impl From<TryFromSliceError> for Error {
         }
     }
 }
-

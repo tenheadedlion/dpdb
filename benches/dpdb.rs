@@ -4,16 +4,17 @@ use dpdb::Executor;
 use pprof::criterion::{Output, PProfProfiler};
 
 pub fn write(c: &mut Criterion) {
-    let mut executor = Executor::default();
-    let _ = executor.execute("reset /media/root_/SLC16/bench.db");
+    let mut executor = Executor::new().unwrap();
+    let _ = executor.execute("attach /media/root_/SLC16/bench.db");
     c.bench_function("write", |b| {
         b.iter(|| executor.execute(black_box("set sdafasdf sdfasdfasdfsadf")))
     });
-    let _ = executor.execute("set hay something");
+    let _ = executor.execute("set needle hay");
 }
 
 pub fn read(c: &mut Criterion) {
-    let mut executor = Executor::default();
+    let mut executor = Executor::new().unwrap();
+    let _ = executor.execute("attach /media/root_/SLC16/bench.db");
     c.bench_function("read", |b| {
         b.iter(|| {
             let _ = executor.execute(black_box("get needle"));

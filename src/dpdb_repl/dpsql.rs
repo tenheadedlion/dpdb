@@ -7,7 +7,7 @@ fn main() -> Result<()> {
     if rl.load_history("history.txt").is_err() {
         println!("No previous history.");
     }
-    let mut executor = dpdb::Executor::default();
+    let mut executor = dpdb::Executor::new().expect("this should not fail");
     loop {
         let readline = rl.readline(">> ");
         match readline {

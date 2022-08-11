@@ -1,14 +1,8 @@
 use crate::dpdb_core::Result;
 
-use std::{
-    time::{Duration, Instant},
-};
+use std::time::{Duration, Instant};
 
-use super::{
-    parser,
-    statement::{Keyword},
-    storage::Storage,
-};
+use super::{parser, statement::Keyword, storage::Storage};
 
 pub struct Report {
     pub time_elapsed: Duration,
@@ -19,13 +13,14 @@ pub struct Executor {
     storage: Storage,
 }
 
-impl Default for Executor {
-    fn default() -> Self {
-        Executor {
-            storage: Storage::new(),
-        }
+impl Executor {
+    pub fn new() -> Result<Self> {
+        Ok(Executor {
+            storage: Storage::default()?,
+        })
     }
 }
+
 impl Executor {
     pub fn execute(&mut self, line: &str) -> Result<Report> {
         let now = Instant::now();
@@ -36,8 +31,12 @@ impl Executor {
                 .storage
                 .set(statement.key.as_bytes(), statement.value.as_bytes())?,
             Keyword::Get => self.storage.get(statement.key.as_bytes())?,
-            Keyword::Reset => {
-                self.storage = Storage::new().reset(statement.key.as_str())?;
+            Keyword::MoveFile => {
+                self.storage = Storage::default()?.move_file(statement.key.as_str())?;
+                None
+            }
+            Keyword::AttachFile => {
+                self.storage = Storage::default()?.attach_file(statement.key.as_str())?;
                 None
             }
         };
@@ -49,7 +48,27 @@ impl Executor {
             },
         })
     }
-    pub fn merge(&mut self) {
-        
+    pub fn merge(&mut self) {}
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn test() {
+        {
+            let mut executor = Executor::new().unwrap();
+            let _ = executor.execute("attach bench.db");
+            let _ = executor.execute("set sdafasdf sdfasdfasdfsadf");
+            let _ = executor.execute("set sdafasdf sdfasdfasdfsadf");
+            let _ = executor.execute("set sdafasdf sdfasdfasdfsadf");
+            let _ = executor.execute("set needle hay");
+        }
+        {
+            let mut executor = Executor::new().unwrap();
+            let _ = executor.execute("attach bench.db");
+            let val = executor.execute("get needle").unwrap();
+            assert_eq!(val.msg.unwrap(), "hay");
+        }
     }
 }

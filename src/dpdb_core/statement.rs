@@ -1,7 +1,8 @@
 #[derive(Debug)]
 pub(crate) enum Keyword {
     Clear,
-    Reset,
+    MoveFile,
+    AttachFile,
     Set,
     Get,
 }
