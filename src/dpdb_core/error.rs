@@ -1,4 +1,4 @@
-use std::{array::TryFromSliceError, result::Result as StdResult};
+use std::{array::TryFromSliceError, net::AddrParseError, result::Result as StdResult};
 
 pub type Result<T, E = Error> = StdResult<T, E>;
 
@@ -14,6 +14,7 @@ pub enum ErrorKind {
     Display,
     Key,
     File,
+    Unknown,
 }
 
 impl std::error::Error for Error {}
@@ -35,6 +36,9 @@ impl std::fmt::Display for Error {
             }
             ErrorKind::File => {
                 write!(f, "wrong file")
+            }
+            ErrorKind::Unknown => {
+                write!(f, "unknown error")
             }
         }
     }
@@ -68,6 +72,14 @@ impl From<TryFromSliceError> for Error {
     fn from(_: TryFromSliceError) -> Self {
         Error {
             kind: ErrorKind::Parser,
+        }
+    }
+}
+
+impl From<AddrParseError> for Error {
+    fn from(_: AddrParseError) -> Self {
+        Error {
+            kind: ErrorKind::Unknown,
         }
     }
 }

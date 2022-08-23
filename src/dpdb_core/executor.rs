@@ -4,9 +4,35 @@ use std::time::{Duration, Instant};
 
 use super::{parser, statement::Keyword, storage::Storage};
 
+pub enum Response {
+    Record { key: Vec<u8>, value: Vec<u8> },
+    Ok,
+    Error { msg: String },
+}
+
 pub struct Report {
     pub time_elapsed: Duration,
-    pub msg: Option<String>,
+    pub response: Response,
+}
+
+impl Report {
+    pub fn serialize(&self) -> Result<String> {
+        Ok(format!(
+            // OK, we need a protocol here
+            // Or a frame
+            "<BEGIN>\r\n{}\r\n{:?}\r\n<END>",
+            match self.response {
+                Response::Record { ref key, ref value } => format!(
+                    "{}: {}",
+                    std::str::from_utf8(key)?,
+                    std::str::from_utf8(value)?
+                ),
+                Response::Error { ref msg } => format!("error: {}", msg),
+                Response::Ok => "Ok".to_string(),
+            },
+            self.time_elapsed
+        ))
+    }
 }
 
 pub struct Executor {
@@ -22,10 +48,24 @@ impl Executor {
 }
 
 impl Executor {
-    pub fn execute(&mut self, line: &str) -> Result<Report> {
+    pub fn execute(&mut self, line: &str) -> Report {
         let now = Instant::now();
+        let res = self.execute_internal(line);
+        let time_elapsed = now.elapsed();
+        Report {
+            time_elapsed,
+            response: match res {
+                Ok(response) => response,
+                Err(msg) => Response::Error {
+                    msg: msg.to_string(),
+                },
+            },
+        }
+    }
+
+    pub fn execute_internal(&mut self, line: &str) -> Result<Response> {
         let (_, statement) = parser::parse_sql(line)?;
-        let msg = match statement.verb {
+        let response = match statement.verb {
             Keyword::Clear => self.storage.clear()?,
             Keyword::Set => self
                 .storage
@@ -33,20 +73,14 @@ impl Executor {
             Keyword::Get => self.storage.get(statement.key.as_bytes())?,
             Keyword::MoveFile => {
                 self.storage = Storage::default()?.move_file(statement.key.as_str())?;
-                None
+                Response::Ok
             }
             Keyword::AttachFile => {
                 self.storage = Storage::default()?.attach_file(statement.key.as_str())?;
-                None
+                Response::Ok
             }
         };
-        Ok(Report {
-            time_elapsed: now.elapsed(),
-            msg: match msg {
-                Some(msg) => Some(std::str::from_utf8(&msg)?.to_string()),
-                None => None,
-            },
-        })
+        Ok(response)
     }
     pub fn merge(&mut self) {}
 }
@@ -67,8 +101,8 @@ mod test {
         {
             let mut executor = Executor::new().unwrap();
             let _ = executor.execute("attach bench.db");
-            let val = executor.execute("get needle").unwrap();
-            assert_eq!(val.msg.unwrap(), "hay");
+            let report = executor.execute("get needle");
+            assert!(matches!(report.response, Response::Record { .. }));
         }
     }
 }

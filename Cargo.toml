@@ -9,11 +9,19 @@ edition = "2021"
 rustyline = "10.0.0"
 nom = "7"
 pprof = { version = "0.10", features = ["flamegraph", "criterion"] }
-#tokio = { version = "1", features = ["full"] }
+tokio = { version = "1.20.1", features = ["full"] }
+tokio-util = { version = "0.7.0", features = ["full"] }
+tokio-stream = { version = "0.1" }
+futures = "0.3"
+bytes = "1.0.0"
 
 [[bin]]
 name = "dpsql"
 path = "src/dpdb_repl/dpsql.rs"
+
+[[bin]]
+name = "dpdb-server"
+path = "src/dpdb_server/server.rs"
 
 [dev-dependencies]
 criterion = "0.3"

@@ -1,4 +1,4 @@
-use crate::dpdb_core::Result;
+use crate::dpdb_core::{Response, Result};
 use std::collections::HashMap;
 use std::fs::{remove_file, File, OpenOptions};
 use std::io::{prelude::*, SeekFrom};
@@ -60,9 +60,9 @@ impl Storage {
     }
 
     /// remove the database file
-    pub fn clear(&self) -> std::io::Result<Option<Vec<u8>>> {
+    pub fn clear(&self) -> std::io::Result<Response> {
         remove_file(&self.file)?;
-        Ok(None)
+        Ok(Response::Ok)
     }
 
     pub fn move_file(self, file: &str) -> Result<Self> {
@@ -88,7 +88,7 @@ impl Storage {
     }
 
     /// the layout of a pair is: len(key)|len(value)|key|value
-    pub fn set(&mut self, key: &[u8], value: &[u8]) -> std::io::Result<Option<Vec<u8>>> {
+    pub fn set(&mut self, key: &[u8], value: &[u8]) -> std::io::Result<Response> {
         let mut db = OpenOptions::new()
             .create(true)
             .write(true)
@@ -105,10 +105,13 @@ impl Storage {
                 - ((std::mem::size_of::<usize>() * 2 + key.len() + value.len()) as u64),
         );
         db.sync_all()?;
-        Ok(None)
+        Ok(Response::Record {
+            key: key.to_owned(),
+            value: value.to_owned(),
+        })
     }
 
-    pub fn get(&mut self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+    pub fn get(&mut self, key: &[u8]) -> Result<Response> {
         let mut db = File::open(&self.file)?;
         let offset = self.index.get(key);
         match offset {
@@ -118,7 +121,10 @@ impl Storage {
 
         let mut pair_meta = [0u8; std::mem::size_of::<usize>() * 2];
         if db.read_exact(&mut pair_meta).is_err() {
-            return Ok(None);
+            return Ok(Response::Record {
+                key: key.to_owned(),
+                value: Vec::new(),
+            });
         }
         let key_len = usize::from_be_bytes(pair_meta[..8].try_into()?);
         let value_len = usize::from_be_bytes(pair_meta[8..16].try_into()?);
@@ -126,10 +132,13 @@ impl Storage {
         db.read_exact(&mut pair_loaded)?;
         //let key_loaded = &pair_loaded[..key_len];
         let value_loaded = &pair_loaded[key_len..(key_len + value_len)];
-        Ok(Some(value_loaded.to_vec()))
+        Ok(Response::Record {
+            key: key.to_vec(),
+            value: value_loaded.to_vec(),
+        })
     }
 
-    pub fn scan_for_key(&mut self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+    pub fn scan_for_key(&mut self, key: &[u8]) -> Result<Response> {
         let mut db = File::open(&self.file)?;
         db.seek(SeekFrom::Start(self.index_seek))?;
         loop {
@@ -149,7 +158,10 @@ impl Storage {
                 - ((std::mem::size_of::<usize>() * 2 + key_len + value_len) as u64);
             self.index.insert(key.to_vec(), offset);
             if eq_u8(key, key_loaded) {
-                return Ok(Some(value_loaded.to_vec()));
+                return Ok(Response::Record {
+                    key: key.to_vec(),
+                    value: value_loaded.to_vec(),
+                });
             }
         }
     }
