@@ -11,6 +11,6 @@ pub static DB: OnceCell<Mutex<Executor>> = OnceCell::new();
 pub async fn init() -> Result<()> {
     let opt = CF.get().unwrap();
     let executor = Executor::new(&opt.path).await?;
-    DB.set(Mutex::new(executor));
+    let _ = DB.set(Mutex::new(executor));
     Ok(())
 }

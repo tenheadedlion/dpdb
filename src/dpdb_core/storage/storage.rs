@@ -20,6 +20,7 @@ pub struct Storage {
     // the database files are immutable and append-only
     // so we just keep a record of the scanning progress
     index_seek: u64,
+    #[allow(dead_code)]
     file_handle: File,
 }
 

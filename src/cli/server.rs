@@ -1,5 +1,4 @@
 use crate::Result;
-use std::env;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 
@@ -22,7 +21,6 @@ pub async fn init(matches: &clap::ArgMatches) -> Result<()> {
 
 async fn start() -> Result<()> {
     let addr = "127.0.0.1:5860".to_string().parse::<SocketAddr>()?;
-    dbg!(&addr);
     let listener = TcpListener::bind(&addr).await?;
     let db = db::DB.get().unwrap();
     loop {
