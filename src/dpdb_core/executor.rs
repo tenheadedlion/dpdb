@@ -40,9 +40,9 @@ pub struct Executor {
 }
 
 impl Executor {
-    pub fn new() -> Result<Self> {
+    pub async fn new(path: &str) -> Result<Self> {
         Ok(Executor {
-            storage: Storage::default()?,
+            storage: Storage::new(path, "data")?,
         })
     }
 }
@@ -72,11 +72,11 @@ impl Executor {
                 .set(statement.key.as_bytes(), statement.value.as_bytes())?,
             Keyword::Get => self.storage.get(statement.key.as_bytes())?,
             Keyword::MoveFile => {
-                self.storage = Storage::default()?.move_file(statement.key.as_str())?;
+                self.storage.move_dir(statement.key.as_str())?;
                 Response::Ok
             }
             Keyword::AttachFile => {
-                self.storage = Storage::default()?.attach_file(statement.key.as_str())?;
+                self.storage.attach_dir(statement.key.as_str())?;
                 Response::Ok
             }
         };
@@ -88,10 +88,12 @@ impl Executor {
 #[cfg(test)]
 mod test {
     use super::*;
-    #[test]
-    fn test() {
+    #[tokio::test]
+    async fn test() {
+        let dir = "/tmp/dpdb-test-storage";
+        std::fs::create_dir(dir).unwrap();
         {
-            let mut executor = Executor::new().unwrap();
+            let mut executor = Executor::new(dir).await.unwrap();
             let _ = executor.execute("attach bench.db");
             let _ = executor.execute("set sdafasdf sdfasdfasdfsadf");
             let _ = executor.execute("set sdafasdf sdfasdfasdfsadf");
@@ -99,10 +101,11 @@ mod test {
             let _ = executor.execute("set needle hay");
         }
         {
-            let mut executor = Executor::new().unwrap();
+            let mut executor = Executor::new(dir).await.unwrap();
             let _ = executor.execute("attach bench.db");
             let report = executor.execute("get needle");
             assert!(matches!(report.response, Response::Record { .. }));
         }
+        std::fs::remove_dir_all(dir).unwrap();
     }
 }

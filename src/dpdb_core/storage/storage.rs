@@ -1,28 +1,30 @@
 use crate::dpdb_core::{Response, Result};
 use std::collections::HashMap;
-use std::fs::{remove_file, File, OpenOptions};
+use std::fs::{self, remove_file, File, OpenOptions};
 use std::io::{prelude::*, SeekFrom};
+use std::path::Path;
 
 use crate::utils::eq_u8;
 use crate::{Error, ErrorKind};
 
 static MAGIC: &[u8] = "dpdb-feff-1234-1".as_bytes();
 pub struct Storage {
+    // we won't expose the file to users
+    // the directory represents the table
+    dir: String,
+    // by default the name is `data`
+    // the more recent segment file has the smaller number suffix
+    // for example, data.1 is younger than data.2
     file: String,
     index: HashMap<Vec<u8>, u64>,
     // the database files are immutable and append-only
-    // so we just keep a record of the last time of index scanning
+    // so we just keep a record of the scanning progress
     index_seek: u64,
     file_handle: File,
 }
 
 impl Storage {
-    pub fn default() -> Result<Self> {
-        let file = "foo.db";
-        Storage::new(file)
-    }
-
-    fn open_file_safely(file: &str) -> Result<File> {
+    fn open_file_safely(file: &Path) -> Result<File> {
         // Open it anyway, if it is empty, and write magic number into it
         // else read 16 bytes from it, if that fails, abort,
         // else check if the 16 bytes match the magic number, if so, return the file handle
@@ -38,7 +40,8 @@ impl Storage {
             db.write_all(MAGIC)?;
             return Ok(db);
         }
-        // dpdb-feff-1234-1
+        // magic number: dpdb-feff-1234-1
+        // is it really necessary?
         let mut db_meta = [0u8; 16];
         // may fail to read 16 bytes
         db.read_exact(&mut db_meta)?;
@@ -50,10 +53,11 @@ impl Storage {
         })
     }
 
-    pub fn new(file: &str) -> Result<Self> {
+    pub fn new(dir: &str, file: &str) -> Result<Self> {
         Ok(Storage {
+            dir: dir.to_string(),
             file: file.to_string(),
-            file_handle: Storage::open_file_safely(file)?,
+            file_handle: Storage::open_file_safely(&Path::new(dir).join(file))?,
             index: HashMap::new(),
             index_seek: 16,
         })
@@ -65,26 +69,44 @@ impl Storage {
         Ok(Response::Ok)
     }
 
-    pub fn move_file(self, file: &str) -> Result<Self> {
-        if std::fs::metadata(file).is_ok() {
+    pub fn move_dir(&mut self, dir: &str) -> Result<()> {
+        let new_dir = Path::new(dir);
+        // make sure it's directory
+        if !new_dir.is_dir() {
             return Err(Error {
-                kind: ErrorKind::IO,
+                kind: ErrorKind::File,
             });
         }
-        std::fs::copy(&self.file, file)?;
-        remove_file(&self.file)?;
-        drop(self.file_handle);
-        Ok(Storage {
-            file_handle: Storage::open_file_safely(file)?,
-            file: file.to_string(),
-            index: self.index,
+        // the dir should be empty
+        let entries = new_dir.read_dir()?;
+        if entries.count() > 0 {
+            return Err(Error {
+                kind: ErrorKind::File,
+            });
+        }
+        // copy all files to the new dir
+        let curr_dir = Path::new(&self.dir);
+        for entry in curr_dir.read_dir()? {
+            let entry = entry?;
+            let curr_file = curr_dir.join(entry.path());
+            fs::copy(&curr_file, new_dir.join(entry.path()))?;
+            remove_file(curr_file)?;
+        }
+        // clean up and open new file
+        // drop(self.file_handle.try_clone());
+        *self = Storage {
+            dir: dir.to_string(),
+            file_handle: Storage::open_file_safely(&new_dir.join(&self.file))?,
+            file: self.file.clone(),
+            index: self.index.clone(),
             index_seek: self.index_seek,
-        })
+        };
+        Ok(())
     }
-    /// attach to another database file
-    /// first ensure that file can be opened
-    pub fn attach_file(self, file: &str) -> Result<Self> {
-        Storage::new(file)
+
+    pub fn attach_dir(&mut self, dir: &str) -> Result<()> {
+        *self = Storage::new(dir, "data")?;
+        Ok(())
     }
 
     /// the layout of a pair is: len(key)|len(value)|key|value

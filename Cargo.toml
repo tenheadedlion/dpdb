@@ -14,14 +14,16 @@ tokio-util = { version = "0.7.0", features = ["full"] }
 tokio-stream = { version = "0.1" }
 futures = "0.3"
 bytes = "1.0.0"
+once_cell = "1.13.1"
+clap = { version = "3.2.17", features = ["env"] }
 
 [[bin]]
 name = "dpsql"
-path = "src/dpdb_repl/dpsql.rs"
+path = "src/cli/dpsql.rs"
 
-[[bin]]
-name = "dpdb-server"
-path = "src/dpdb_server/server.rs"
+#[[bin]]
+#name = "dpdb-server"
+#path = "src/cli/mod.rs"
 
 [dev-dependencies]
 criterion = "0.3"

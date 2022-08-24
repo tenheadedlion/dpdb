@@ -2,7 +2,7 @@
 
 ## Usage
 
-Basically a KV database for the moment, to store a value, use the `set key value` syntax, to retrive it, use `get key`, to change the storage file, use `reset path`, but due to security concerns, if the target path exists, the operation will be aborted.
+For now it's a KV database with persistence, so it's more that a hashmap. To store a value, use the `set key value` syntax, to retrive, use `get key`
 
 ```shell
 >> set a 2
@@ -12,18 +12,6 @@ Basically a KV database for the moment, to store a value, use the `set key value
 >> get b
 => 2
 310.024µs
-# remove database file
->> clear
-200.863µs
->> get a
-filesystem failure
->> set a 2
-2.175239ms
->> reset /media/h/SLC16/foo.db
-2.231462ms
->> get a
-=> 2
-379.465µs
 ```
 
 ## Benchmarks

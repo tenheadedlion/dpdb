@@ -35,7 +35,7 @@ impl std::fmt::Display for Error {
                 write!(f, "no value for the key")
             }
             ErrorKind::File => {
-                write!(f, "wrong file")
+                write!(f, "wrong file or directory")
             }
             ErrorKind::Unknown => {
                 write!(f, "unknown error")
