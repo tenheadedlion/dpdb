@@ -5,3 +5,6 @@ edition = "2021"
 
 [dependencies]
 nom = "7"
+
+[dev-dependencies]
+tokio = { version = "1.20.1", features = ["macros"] }
