@@ -1,5 +1,7 @@
 use std::{array::TryFromSliceError, net::AddrParseError, result::Result as StdResult};
 
+use tokio_util::codec::LinesCodecError;
+
 pub type Result<T, E = Error> = StdResult<T, E>;
 
 #[derive(Debug)]
@@ -15,6 +17,7 @@ pub enum ErrorKind {
     Key,
     File,
     Unknown,
+    Socket,
 }
 
 impl std::error::Error for Error {}
@@ -36,6 +39,9 @@ impl std::fmt::Display for Error {
             }
             ErrorKind::File => {
                 write!(f, "wrong file or directory")
+            }
+            ErrorKind::Socket => {
+                write!(f, "network problem")
             }
             ErrorKind::Unknown => {
                 write!(f, "unknown error")
@@ -80,6 +86,14 @@ impl From<AddrParseError> for Error {
     fn from(_: AddrParseError) -> Self {
         Error {
             kind: ErrorKind::Unknown,
+        }
+    }
+}
+
+impl From<LinesCodecError> for Error {
+    fn from(_: LinesCodecError) -> Self {
+        Error {
+            kind: ErrorKind::Socket,
         }
     }
 }

@@ -4,10 +4,7 @@ use tokio::net::TcpListener;
 
 use crate::dpdb_core::db;
 
-use futures::SinkExt;
-
-use tokio_stream::StreamExt;
-use tokio_util::codec::{Framed, LinesCodec};
+use crate::net::receiver::Receiver;
 
 use super::config;
 
@@ -21,31 +18,18 @@ pub async fn init(matches: &clap::ArgMatches) -> Result<()> {
 
 async fn start() -> Result<()> {
     let addr = "127.0.0.1:5860".to_string().parse::<SocketAddr>()?;
-    let listener = TcpListener::bind(&addr).await?;
+    let receiver = Receiver::new(addr).await?;
     let db = db::DB.get().unwrap();
     loop {
-        match listener.accept().await {
-            Ok((socket, _)) => {
-                tokio::spawn(async move {
-                    let mut lines = Framed::new(socket, LinesCodec::new());
-                    while let Some(result) = lines.next().await {
-                        match result {
-                            Ok(line) => {
-                                let response = db.lock().await.execute(&line);
-                                let response =
-                                    response.serialize().unwrap_or_else(|_| "".to_string());
-                                if let Err(e) = lines.send(response.as_str()).await {
-                                    println!("error on sending response; error = {:?}", e);
-                                }
-                            }
-                            Err(e) => {
-                                println!("error on decoding from socket; error = {:?}", e);
-                            }
-                        }
-                    }
-                });
+        let mut rpcend = receiver.new_conn().await?;
+        dbg!(&rpcend);
+        tokio::spawn(async move {
+            while let Ok(Some(line)) = rpcend.receive().await {
+                let response = db.lock().await.execute(&line);
+                let response = response.serialize().unwrap_or_else(|_| "".to_string());
+                // what else do you want in a loop?
+                let _ = rpcend.send(response.as_str()).await;
             }
-            Err(e) => println!("error accepting socket; error = {:?}", e),
-        }
+        });
     }
 }
