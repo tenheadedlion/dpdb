@@ -22,7 +22,7 @@ async fn start(addr: &str) -> Result<(), Error> {
         let mut rpcend = receiver.new_conn().await?;
         tokio::spawn(async move {
             while let Ok(Some(line)) = rpcend.receive().await {
-                info!("{}", &line);
+                info!("sql: {}", &line);
                 let response = db.lock().await.execute(&line);
                 let response = response.serialize().unwrap_or_else(|_| "".to_string());
                 // what else do you want in a loop?

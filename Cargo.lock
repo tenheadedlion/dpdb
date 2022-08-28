@@ -388,6 +388,7 @@ dependencies = [
 name = "dpdb_core"
 version = "0.1.0"
 dependencies = [
+ "log",
  "nom",
  "tokio",
 ]

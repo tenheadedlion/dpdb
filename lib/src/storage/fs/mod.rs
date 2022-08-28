@@ -1,3 +1,5 @@
+use log::info;
+
 use crate::{response::Response, utils::eq_u8, Error, ErrorKind, Result};
 use std::{
     fs::{self, remove_file, File, OpenOptions},
@@ -20,6 +22,8 @@ pub struct FileSystem {
 
 impl FileSystem {
     pub fn new(dir: &str, file: &str) -> Result<Self> {
+        let dbf = Path::new(dir).join(file);
+        info!("Open database file: {:?}", &dbf.to_str());
         Ok(FileSystem {
             dir: dir.to_owned(),
             file: file.to_owned(),
@@ -27,8 +31,8 @@ impl FileSystem {
                 .create(true)
                 .write(true)
                 .append(true)
-                .open(file)?,
-            read_handle: File::open(file)?,
+                .open(&dbf)?,
+            read_handle: File::open(&dbf)?,
         })
     }
     #[allow(dead_code)]

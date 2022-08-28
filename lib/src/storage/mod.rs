@@ -1,13 +1,13 @@
 mod fs;
 mod index;
+use self::fs::FileSystem;
 use crate::error::Result;
 use crate::response::Response;
 use crate::storage::index::Index;
 use crate::utils::eq_u8;
 use crate::{Error, ErrorKind};
+use log::info;
 use std::io::{prelude::*, SeekFrom};
-
-use self::fs::FileSystem;
 
 pub struct Storage {
     index: Index,
@@ -77,6 +77,7 @@ impl Storage {
     }
 
     fn scan_for_key(&mut self, key: &[u8]) -> Result<Response> {
+        info!("key: {:?}", key);
         self.fs.read_handle.seek(SeekFrom::Start(self.index_seek))?;
         loop {
             let mut pair_meta = [0u8; 16];
