@@ -1,39 +1,6 @@
-use crate::Result;
-
-use std::time::{Duration, Instant};
-
 use super::{parser, statement::Keyword, storage::Storage};
-
-pub enum Response {
-    Record { key: Vec<u8>, value: Vec<u8> },
-    Ok,
-    Error { msg: String },
-}
-
-pub struct Report {
-    pub time_elapsed: Duration,
-    pub response: Response,
-}
-
-impl Report {
-    pub fn serialize(&self) -> Result<String> {
-        Ok(format!(
-            // OK, we need a protocol here
-            // Or a frame
-            "<BEGIN>\r\n{}\r\n{:?}\r\n<END>",
-            match self.response {
-                Response::Record { ref key, ref value } => format!(
-                    "{}: {}",
-                    std::str::from_utf8(key)?,
-                    std::str::from_utf8(value)?
-                ),
-                Response::Error { ref msg } => format!("error: {}", msg),
-                Response::Ok => "Ok".to_string(),
-            },
-            self.time_elapsed
-        ))
-    }
-}
+use crate::{report::Report, response::Response, Result};
+use std::time::Instant;
 
 pub struct Executor {
     storage: Storage,
@@ -71,14 +38,7 @@ impl Executor {
                 .storage
                 .set(statement.key.as_bytes(), statement.value.as_bytes())?,
             Keyword::Get => self.storage.get(statement.key.as_bytes())?,
-            Keyword::MoveFile => {
-                self.storage.move_dir(statement.key.as_str())?;
-                Response::Ok
-            }
-            Keyword::AttachFile => {
-                self.storage.attach_dir(statement.key.as_str())?;
-                Response::Ok
-            }
+            _ => Response::Ok,
         };
         Ok(response)
     }
