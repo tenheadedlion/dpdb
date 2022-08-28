@@ -18,7 +18,7 @@ where
     delimited(multispace0, inner, multispace0)
 }
 
-use crate::dpdb_core::statement::{Keyword, Statement};
+use crate::statement::{Keyword, Statement};
 
 pub(crate) fn parse_sql(input: &str) -> IResult<&str, Statement> {
     alt((

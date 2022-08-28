@@ -1,12 +1,12 @@
 use crate::net::RpcEnd;
-use crate::{Error, Result};
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 use std::net::SocketAddr;
 use tokio::net::TcpStream;
+use crate::Error;
 
 #[tokio::main]
-pub async fn init() -> Result<()> {
+pub async fn init() -> Result<(), Error> {
     // `()` can be used when no completer is required
     let mut rl = Editor::<()>::new()?;
     if rl.load_history("history.txt").is_err() {

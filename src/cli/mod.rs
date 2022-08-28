@@ -1,18 +1,15 @@
 mod config;
 mod dpsql;
 mod server;
-use std::path::Path;
-
-use crate::dpdb_core::{Error, ErrorKind, Result};
+use crate::Error;
 use clap::{Arg, Command};
 pub use config::CF;
+use std::path::Path;
 
-fn path_valid(v: &str) -> Result<()> {
+fn path_valid(v: &str) -> Result<(), Error> {
     let path = Path::new(v);
     if !path.is_dir() {
-        return Err(Error {
-            kind: ErrorKind::File,
-        });
+        return Err(Error::Fs);
     }
     Ok(())
 }

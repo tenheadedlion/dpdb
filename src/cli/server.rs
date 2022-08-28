@@ -1,18 +1,18 @@
-use crate::Result;
-use std::net::SocketAddr;
-use crate::dpdb_core::db;
-use crate::net::receiver::Receiver;
 use super::config;
+use crate::db;
+use crate::net::receiver::Receiver;
+use crate::Error;
+use std::net::SocketAddr;
 
 #[tokio::main]
-pub async fn init(matches: &clap::ArgMatches) -> Result<()> {
+pub async fn init(matches: &clap::ArgMatches) -> Result<(), Error> {
     config::init(matches);
     db::init().await?;
     start().await?;
     Ok(())
 }
 
-async fn start() -> Result<()> {
+async fn start() -> Result<(), Error> {
     let addr = "127.0.0.1:5860".to_string().parse::<SocketAddr>()?;
     let receiver = Receiver::new(addr).await?;
     let db = db::DB.get().unwrap();

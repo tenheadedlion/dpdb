@@ -1,4 +1,4 @@
-use crate::dpdb_core::Result;
+use crate::Result;
 
 use std::time::{Duration, Instant};
 

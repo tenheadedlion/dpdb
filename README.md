@@ -17,13 +17,13 @@ For now it's a KV database with persistence, so it's more that a hashmap. To sto
 run the server with:
 
 ```shell
-cargo run --bin dpdb start <data path, eg.:/media/root_/SLC16/test>
+cargo run start <data path, eg.:/media/root_/SLC16/test>
 ```
 
 run the repl with:
 
 ```shell
-cargo run --bin dpsql
+cargo run connect
 ```
 
 

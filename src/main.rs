@@ -1,11 +1,12 @@
 //! > ** DP Database **
 //!
 
-mod dpdb_core;
-use dpdb_core::*;
 mod cli;
+mod db;
+mod err;
 mod net;
-use log::{info, trace, warn};
+use err::Error;
+//use log::{info, trace, warn};
 
 fn main() {
     cli::init();
