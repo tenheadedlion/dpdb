@@ -1,5 +1,6 @@
 use std::{array::TryFromSliceError, net::AddrParseError, result::Result as StdResult};
 
+use rustyline::error::ReadlineError;
 use tokio_util::codec::LinesCodecError;
 
 pub type Result<T, E = Error> = StdResult<T, E>;
@@ -94,6 +95,14 @@ impl From<LinesCodecError> for Error {
     fn from(_: LinesCodecError) -> Self {
         Error {
             kind: ErrorKind::Socket,
+        }
+    }
+}
+
+impl From<ReadlineError> for Error {
+    fn from(_: ReadlineError) -> Self {
+        Error {
+            kind: ErrorKind::Display,
         }
     }
 }

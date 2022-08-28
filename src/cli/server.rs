@@ -1,11 +1,7 @@
 use crate::Result;
 use std::net::SocketAddr;
-use tokio::net::TcpListener;
-
 use crate::dpdb_core::db;
-
 use crate::net::receiver::Receiver;
-
 use super::config;
 
 #[tokio::main]

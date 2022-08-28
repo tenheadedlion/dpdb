@@ -1,4 +1,5 @@
 mod config;
+mod dpsql;
 mod server;
 use std::path::Path;
 
@@ -27,10 +28,12 @@ pub fn init() {
                 .help("Database path used for storing data"),
         ),
     );
+    let setup = setup.subcommand(Command::new("connect"));
 
     let matches = setup.get_matches();
     let output = match matches.subcommand() {
         Some(("start", m)) => server::init(m),
+        Some(("connect", _m)) => dpsql::init(),
         _ => Ok(()),
     };
     if let Err(e) = output {

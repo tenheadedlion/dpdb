@@ -1,12 +1,11 @@
-pub(crate) mod receiver;
-pub(crate) mod sender;
+pub mod receiver;
 use crate::Result;
 use futures::SinkExt;
 use tokio_stream::StreamExt;
 use tokio_util::codec::{Framed as TokioFramed, LinesCodec};
 
 use tokio::net::TcpStream;
-type Framed = TokioFramed<TcpStream, LinesCodec>;
+pub type Framed = TokioFramed<TcpStream, LinesCodec>;
 
 #[derive(Debug)]
 pub struct RpcEnd {

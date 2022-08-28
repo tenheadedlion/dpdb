@@ -1,26 +1,20 @@
-use futures::SinkExt;
+use crate::net::RpcEnd;
+use crate::{Error, Result};
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
-use tokio::net::TcpStream;
-use tokio_stream::StreamExt;
-//, Result as RustyResult};
-use std::env;
 use std::net::SocketAddr;
-use tokio_util::codec::{Framed, LinesCodec};
+use tokio::net::TcpStream;
 
 #[tokio::main]
-async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
+pub async fn init() -> Result<()> {
     // `()` can be used when no completer is required
     let mut rl = Editor::<()>::new()?;
     if rl.load_history("history.txt").is_err() {
         println!("No previous history.");
     }
-    let addr = env::args()
-        .nth(1)
-        .unwrap_or_else(|| "127.0.0.1:5860".to_string())
-        .parse::<SocketAddr>()?;
+    let addr = "127.0.0.1:5860".to_string().parse::<SocketAddr>()?;
     let socket = TcpStream::connect(addr).await?;
-    let mut lines = Framed::new(socket, LinesCodec::new());
+    let mut rpcend = RpcEnd::new(socket);
     loop {
         let readline = rl.readline(">> ");
         match readline {
@@ -29,11 +23,11 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
                     continue;
                 }
                 rl.add_history_entry(line.as_str());
-                if let Err(e) = lines.send(line.as_str()).await {
+                if let Err(e) = rpcend.send(line.as_str()).await {
                     println!("error on sending response; error = {:?}", e);
                 }
-                while let Some(result) = lines.next().await {
-                    let result = result?;
+                // further work is needed to hide the protocol detail
+                while let Ok(Some(result)) = rpcend.receive().await {
                     if result.eq("<BEGIN>") {
                         continue;
                     }
