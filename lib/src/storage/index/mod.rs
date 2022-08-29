@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
 pub struct Index {
-    internal: HashMap<Vec<u8>, u64>,
+    pub internal: HashMap<Vec<u8>, u64>,
 }
 
 impl Index {

@@ -34,9 +34,11 @@ impl Executor {
         let (_, statement) = parser::parse_sql(line)?;
         let response = match statement.verb {
             Keyword::Clear => self.storage.clear()?,
-            Keyword::Set => self
-                .storage
-                .set(statement.key.as_bytes(), statement.value.as_bytes())?,
+            Keyword::Set => {
+                self.storage.fs.wal(line)?;
+                self.storage
+                    .set(statement.key.as_bytes(), statement.value.as_bytes())?
+            }
             Keyword::Get => self.storage.get(statement.key.as_bytes())?,
             _ => Response::Ok,
         };
