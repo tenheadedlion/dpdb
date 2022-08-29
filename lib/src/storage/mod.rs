@@ -1,11 +1,11 @@
 mod fs;
 mod index;
-use self::fs::FileSystem;
+use self::fs::{DBFile, FileSystem};
 use crate::error::Result;
 use crate::response::Response;
 use crate::storage::index::Index;
 use crate::utils::eq_u8;
-use crate::Error;
+use crate::{Error, ErrorKind};
 use log::info;
 use std::io::{prelude::*, SeekFrom};
 use std::path::Path;
@@ -24,9 +24,6 @@ pub struct Storage {
     // but do we really want to be that accurate? counting bytes?
     // I prefer counting entries, but what to count by is trivial.
     memtable_size: usize,
-    // the database files are immutable and append-only
-    // so we just keep a record of the scanning progress
-    index_seek: u64,
     pub fs: FileSystem,
 }
 
@@ -35,7 +32,6 @@ impl Storage {
         Ok(Storage {
             index: Index::new(),
             memtable: BTreeMap::new(),
-            index_seek: 16,
             fs: FileSystem::new(dir, file)?,
             threshold: 1,
             memtable_size: 0,
@@ -56,6 +52,7 @@ impl Storage {
             let buf = data_format::encode(key, value);
             file.write_all(&buf)?;
         }
+        // this is the uglyness of OOP
         self.memtable.clear();
         self.memtable_size = 0;
         file.sync_all()?;
@@ -71,7 +68,7 @@ impl Storage {
         if self.memtable_size > self.threshold {
             // first, pick a name
             // the work is delegated to fs who knows what files are in the data directory,
-            // underneath, the fs will do a heavy load of file operations(mainly file renaming)
+            // underneath, the fs will do a heavy(is it?) load of file operations(mainly file renaming)
             let file_name = self.fs.allocate_data_file()?;
             self.migrate_memtable(&file_name)?;
         }
@@ -87,35 +84,38 @@ impl Storage {
                 key: key.to_vec(),
                 value: value.clone(),
             }),
-            None => {
-                // todo: go search the file in the disk
-                Err(Error {
-                    kind: crate::ErrorKind::Key,
-                })
-            }
+            None => Storage::get_from_files(Path::new(&self.fs.dir), key),
         }
     }
-    /*
-        pub fn get_from_disk(&mut self, key: &[u8]) -> Result<Response> {
-            let offset = self.index.get(key);
-            match offset {
-                Some(offset) => self.fs.read_handle.seek(SeekFrom::Start(*offset))?,
-                None => return self.scan_for_key(key),
-            };
-
-            let mut pair_meta = [0u8; std::mem::size_of::<usize>() * 2];
-            if self.fs.write_handle.read_exact(&mut pair_meta).is_err() {
+    
+    pub fn get_from_file(file: &Path, key: &[u8]) -> Result<Response> {
+        let dbfile = DBFile::new(file)?;
+        for record in dbfile {
+            if eq_u8(key, &record.key) {
                 return Ok(Response::Record {
-                    key: key.to_owned(),
-                    value: Vec::new(),
+                    key: key.to_vec(),
+                    value: record.value,
                 });
             }
-            let record = self.fs.read_record()?;
-            Ok(Response::Record {
-                key: record.key,
-                value: record.value,
-            })
         }
+        Err(Error {
+            kind: ErrorKind::Key,
+        })
+    }
+
+    pub fn get_from_files(dir: &Path, key: &[u8]) -> Result<Response> {
+        let files = FileSystem::scan_data_files(dir)?;
+        for file in files {
+            if let Ok(r) = Storage::get_from_file(&file, key) {
+                return Ok(r);
+            }
+        }
+
+        Err(Error {
+            kind: ErrorKind::Key,
+        })
+    }
+    /*
     fn scan_for_key(&mut self, key: &[u8]) -> Result<Response> {
         info!("key: {:?}", key);
         self.fs.read_handle.seek(SeekFrom::Start(self.index_seek))?;
@@ -138,6 +138,7 @@ impl Storage {
     // the thing is, when to compact?
     //  when the index reaches certain threshold
     //      it will be dump to a file and compacted
+    /*
     fn compact(dir: &str, file: &str) -> Result<PathBuf> {
         let file = Path::new(file);
         let mut handle = FileSystem::open_file_safely(file)?;
@@ -154,4 +155,5 @@ impl Storage {
         }
         Ok(new_file)
     }
+    */
 }

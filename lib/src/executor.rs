@@ -35,6 +35,8 @@ impl Executor {
         let response = match statement.verb {
             Keyword::Clear => self.storage.clear()?,
             Keyword::Set => {
+                // should be a transaction;
+                // todo: this statement should be inside set() method
                 self.storage.fs.wal(line)?;
                 self.storage
                     .set(statement.key.as_bytes(), statement.value.as_bytes())?

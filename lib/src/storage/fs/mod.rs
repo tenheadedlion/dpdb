@@ -118,7 +118,7 @@ impl FileSystem {
     //    self.read_handle = h;
     //    Ok(r)
     //}
-    pub fn read_record_with(mut read_handle: File) -> Result<(File, Record)> {
+    pub fn read_record_with(read_handle: &mut File) -> Result<Record> {
         let mut pair_meta = [0u8; 16];
         if read_handle.read_exact(&mut pair_meta).is_err() {
             return Err(Error {
@@ -133,19 +133,16 @@ impl FileSystem {
         read_handle.read_exact(&mut pair_loaded)?;
         let key_loaded = &pair_loaded[..key_len];
         let value_loaded = &pair_loaded[key_len..(key_len + value_len)];
-        Ok((
-            read_handle,
-            Record {
-                klen: key_len,
-                vlen: value_len,
-                key: key_loaded.to_vec(),
-                value: value_loaded.to_vec(),
-            },
-        ))
+        Ok(Record {
+            klen: key_len,
+            vlen: value_len,
+            key: key_loaded.to_vec(),
+            value: value_loaded.to_vec(),
+        })
     }
 
-    pub fn scan_data_files(&self) -> Result<Vec<PathBuf>> {
-        let mut files = fs::read_dir(&self.dir)?
+    pub fn scan_data_files(dir: &Path) -> Result<Vec<PathBuf>> {
+        let mut files = fs::read_dir(dir)?
             .map(|res| res.map(|e| e.path()))
             .filter(|e| match e {
                 Ok(path) => {
@@ -166,7 +163,7 @@ impl FileSystem {
     // the fs will keep a record of files on the disk
     // but no need -- the files won't go away
     pub fn allocate_data_file(&self) -> Result<PathBuf> {
-        let files = self.scan_data_files()?;
+        let files = FileSystem::scan_data_files(Path::new(&self.dir))?;
         // the first one must be `data` which is later renamed to `data.1`
         let len = files.len();
         for (i, f) in files.iter().rev().enumerate() {
@@ -176,5 +173,26 @@ impl FileSystem {
             std::fs::rename(f, new)?;
         }
         Ok(Path::new(&self.dir).join("data"))
+    }
+}
+
+pub struct DBFile {
+    file: File,
+}
+
+impl DBFile {
+    pub fn new(file: &Path) -> Result<Self> {
+        let file = FileSystem::open_file_safely(file)?;
+        Ok(DBFile { file })
+    }
+}
+
+impl Iterator for DBFile {
+    type Item = Record;
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Ok(record) = FileSystem::read_record_with(&mut self.file) {
+            return Some(record);
+        }
+        None
     }
 }
