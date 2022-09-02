@@ -33,7 +33,7 @@ impl Storage {
             index: Index::new(),
             memtable: BTreeMap::new(),
             fs: FileSystem::new(dir, file)?,
-            threshold: 1,
+            threshold: 4096 * 1024,
             memtable_size: 0,
         })
     }
@@ -87,7 +87,7 @@ impl Storage {
             None => Storage::get_from_files(Path::new(&self.fs.dir), key),
         }
     }
-    
+
     pub fn get_from_file(file: &Path, key: &[u8]) -> Result<Response> {
         let dbfile = DBFile::new(file)?;
         for record in dbfile {

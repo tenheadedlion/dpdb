@@ -5,6 +5,7 @@ use crate::Error;
 use clap::{Arg, Command};
 pub use config::CF;
 use std::path::Path;
+mod tests;
 
 fn path_valid(v: &str) -> Result<(), Error> {
     let path = Path::new(v);
@@ -26,11 +27,20 @@ pub fn init() {
         ),
     );
     let setup = setup.subcommand(Command::new("connect"));
+    let setup = setup.subcommand(
+        Command::new("test").arg(
+            Arg::new("type")
+                .index(1)
+                .required(true)
+                .help("Test reading or writing"),
+        ),
+    );
 
     let matches = setup.get_matches();
     let output = match matches.subcommand() {
         Some(("start", m)) => server::init(m),
         Some(("connect", _m)) => dpsql::init(),
+        Some(("test", m)) => tests::init(m),
         _ => Ok(()),
     };
     if let Err(e) = output {

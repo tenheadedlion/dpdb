@@ -26,8 +26,24 @@ run the repl with:
 cargo run connect
 ```
 
+test write qps:
+
+```shell
+cargo run test write
+```
 
 ## Benchmarks
+
+## LSM Tree v0.0.1
+
+threshold: 4096 Bytes, write queries: 1000, time_elapsed: 31.086472ms, qps: 3000
+
+threshold: 4096 Bytes, write queries: 10000, time_elapsed: 62.437755ms, qps: 1000
+
+threshold: 4096 Bytes, write queries: 100_000, time_elapsed: 374.046783287s, qps: 0
+
+threshold: 4096 KBytes, write queries: 100_000, time_elapsed: 132.617176824s, qps: 0
+
 
 ### 3. Using hash map as index
 

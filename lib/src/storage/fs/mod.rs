@@ -1,6 +1,7 @@
 use crate::{response::Response, utils::eq_u8, Error, ErrorKind, Result};
 use log::info;
 use std::{
+    ffi::OsStr,
     fs::{self, remove_file, File, OpenOptions},
     io::{Read, Write},
     path::{Path, PathBuf},
@@ -156,7 +157,19 @@ impl FileSystem {
                 Err(_) => false,
             })
             .collect::<std::result::Result<Vec<_>, std::io::Error>>()?;
-        files.sort();
+        let get_ext_as_num = |path: &PathBuf| {
+            path.extension()
+                .unwrap_or_else(|| OsStr::new("0"))
+                .to_str()
+                .unwrap()
+                .parse::<i32>()
+                .unwrap()
+        };
+        files.sort_by(|a, b| {
+            let a = get_ext_as_num(a);
+            let b = get_ext_as_num(b);
+            a.cmp(&b)
+        });
         Ok(files)
     }
 
@@ -167,7 +180,6 @@ impl FileSystem {
         // the first one must be `data` which is later renamed to `data.1`
         let len = files.len();
         for (i, f) in files.iter().rev().enumerate() {
-            info!("{}", i);
             let new = f.with_extension((len - i).to_string());
             info!("rename {} to {}", f.display(), new.display());
             std::fs::rename(f, new)?;

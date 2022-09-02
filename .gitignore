@@ -4,3 +4,4 @@ foo.txt
 foo.db
 *.profile
 data
+test/
