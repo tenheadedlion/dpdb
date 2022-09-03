@@ -7,6 +7,7 @@ use crate::storage::index::Index;
 use crate::utils::eq_u8;
 use crate::{Error, ErrorKind};
 use log::info;
+use std::fs::File;
 use std::io::{prelude::*, SeekFrom};
 use std::path::Path;
 mod data_format;
@@ -45,12 +46,18 @@ impl Storage {
     }
 
     /// the layout of a pair is: len(key)|len(value)|key|value
-    pub fn migrate_memtable(&mut self, file: &Path) -> Result<()> {
-        info!("migrating memtable to disk: {}", file.display());
-        let mut file = FileSystem::open_file_safely(file)?;
+    pub fn migrate_memtable(&mut self, path: &Path) -> Result<()> {
+        info!("migrating memtable to disk: {}", path.display());
+        let mut file = FileSystem::open_file_safely(path)?;
+        let mut offset: u64 = fs::META_SIZE;
         for (key, value) in &self.memtable {
             let buf = data_format::encode(key, value);
             file.write_all(&buf)?;
+            offset += buf.len() as u64;
+            // todo: when the runtime crashes, find a way to restore the index
+            self.index
+                .insert(key, path.to_str().unwrap(), offset)
+                .unwrap();
         }
         // this is the uglyness of OOP
         self.memtable.clear();
@@ -88,8 +95,21 @@ impl Storage {
                 key: key.to_vec(),
                 value: value.clone(),
             }),
-            None => Storage::get_from_files(Path::new(&self.fs.dir), key),
+            None => self.get_from_segments(key),
         }
+    }
+
+    pub fn get_from_segments(&self, key: &[u8]) -> Result<Response> {
+        let node = self.index.get(key).map(Ok).unwrap_or(Err(Error {
+            kind: ErrorKind::Key,
+        }))?;
+        let mut seg = File::open(&node.segment)?;
+        _ = seg.seek(SeekFrom::Start(node.offset));
+        let rec = FileSystem::read_record_with(&mut seg)?;
+        Ok(Response::Record {
+            key: rec.key,
+            value: rec.value,
+        })
     }
 
     pub fn get_from_file(file: &Path, key: &[u8]) -> Result<Response> {

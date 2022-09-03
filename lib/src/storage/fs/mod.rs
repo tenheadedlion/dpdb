@@ -1,4 +1,4 @@
-use crate::{response::Response, utils::eq_u8, Error, ErrorKind, Result};
+use crate::{response::Response, utils::eq_u8, Error, ErrorKind, Result, storage::index::Index};
 use log::info;
 use std::{
     ffi::OsStr,
@@ -10,6 +10,7 @@ use std::{
 use super::data_format::Record;
 
 static MAGIC: &[u8] = "dpdb-feff-1234-1".as_bytes();
+pub(crate) static META_SIZE: u64 = 16;
 pub struct FileSystem {
     // we won't expose the file to users
     // the directory represents the table
@@ -19,6 +20,7 @@ pub struct FileSystem {
     // for example, data.1 is younger than data.2
     pub file: String,
     pub wal_handle: File,
+    index: Index
 }
 
 impl FileSystem {
@@ -35,6 +37,7 @@ impl FileSystem {
                 .write(true)
                 .append(true)
                 .open(&wal)?,
+            index: Index::new()
         })
     }
 

@@ -1,22 +1,34 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
-#[derive(Clone, Debug)]
-pub struct Index {
-    pub internal: HashMap<Vec<u8>, u64>,
+#[derive(Debug)]
+pub struct Node {
+    pub(crate) offset: u64,
+    pub(crate) segment: String,
+}
+
+#[derive(Debug)]
+pub(crate) struct Index {
+    pub(crate) internal: BTreeMap<Vec<u8>, Node>,
 }
 
 impl Index {
     pub fn new() -> Self {
         Index {
-            internal: HashMap::new(),
+            internal: BTreeMap::new(),
         }
     }
 
-    pub fn insert(&mut self, k: &[u8], v: u64) -> Option<u64> {
-        self.internal.insert(k.to_vec(), v)
+    pub fn insert(&mut self, k: &[u8], segment: &str, offset: u64) -> Option<Node> {
+        self.internal.insert(
+            k.to_vec(),
+            Node {
+                segment: segment.to_string(),
+                offset,
+            },
+        )
     }
 
-    pub fn get(&self, k: &[u8]) -> Option<&u64> {
+    pub fn get(&self, k: &[u8]) -> Option<&Node> {
         self.internal.get(k)
     }
 
