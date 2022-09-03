@@ -29,7 +29,7 @@ cargo run connect
 test write qps:
 
 ```shell
-cargo run test write
+cargo run --feature test test write
 ```
 
 ## Benchmarks

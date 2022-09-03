@@ -26,7 +26,9 @@ pub fn init() {
                 .help("Database path used for storing data"),
         ),
     );
+    #[cfg(feature = "repl")]
     let setup = setup.subcommand(Command::new("connect"));
+    #[cfg(feature = "test")]
     let setup = setup.subcommand(
         Command::new("test").arg(
             Arg::new("type")

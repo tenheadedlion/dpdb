@@ -33,6 +33,8 @@ pub async fn init(matches: &clap::ArgMatches) -> Result<(), Error> {
     Ok(())
 }
 
+// todo: during this test, when the number of queries reaches a certain threshold, 
+//  the server will go through a freezing phase, figure out why.
 async fn write(data: Vec<(String, String)>) -> Result<(), Error> {
     let mut tasks: Vec<JoinHandle<()>> = Vec::new();
     for _ in 1..2 {

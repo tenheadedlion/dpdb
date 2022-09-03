@@ -32,3 +32,8 @@ features = [
 
 [dev-dependencies]
 criterion = "0.3"
+
+[features]
+default = []
+test = []
+repl = []
