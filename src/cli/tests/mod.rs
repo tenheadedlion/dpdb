@@ -26,6 +26,7 @@ pub async fn init(matches: &clap::ArgMatches) -> Result<(), Error> {
     let pairs = load("test/data").await?;
 
     match r#type.as_str() {
+        "read" => read(pairs).await?,
         "write" => write(pairs).await?,
         "generate" => generate("test/data").await?,
         _ => {}
@@ -33,7 +34,44 @@ pub async fn init(matches: &clap::ArgMatches) -> Result<(), Error> {
     Ok(())
 }
 
-// todo: during this test, when the number of queries reaches a certain threshold, 
+// todo: wrap it up
+async fn read(data: Vec<(String, String)>) -> Result<(), Error> {
+    let mut tasks: Vec<JoinHandle<()>> = Vec::new();
+    for _ in 1..2 {
+        let mut rng = thread_rng();
+        let mut data = data.clone();
+        data.shuffle(&mut rng);
+        let quests_len = data.len() as f64;
+        let task = tokio::spawn(async move {
+            let now = Instant::now();
+            let addr = "127.0.0.1:5860".to_string().parse::<SocketAddr>().unwrap();
+            let socket = TcpStream::connect(addr).await.unwrap();
+            let mut rpcend = RpcEnd::new(socket);
+            for (i, d) in data.into_iter().enumerate() {
+                if i > 100 {
+                    break;
+                }
+                let sql = format!("get {}", d.0);
+                _ = rpcend.send(&sql).await;
+            }
+            let time_elapsed = now.elapsed();
+            info!(
+                "test read, time_elapsed: {:?}, qps: {}",
+                time_elapsed,
+                quests_len / time_elapsed.as_micros() as f64 * 1000_f64
+            );
+        });
+        tasks.push(task);
+    }
+
+    for t in tasks {
+        _ = t.await;
+    }
+
+    Ok(())
+}
+
+// todo: during this test, when the number of queries reaches a certain threshold,
 //  the server will go through a freezing phase, figure out why.
 async fn write(data: Vec<(String, String)>) -> Result<(), Error> {
     let mut tasks: Vec<JoinHandle<()>> = Vec::new();
