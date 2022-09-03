@@ -60,18 +60,22 @@ impl Storage {
     }
 
     // first insert the new value to the tree
+    // consider this scenario: the user reads a key immediately after inserting it to the db,
+    //  the user should get the key from the memtable, rather than segment files.
     pub fn set(&mut self, key: &[u8], value: &[u8]) -> Result<Response> {
-        let prev = self.memtable.insert(key.to_vec(), value.to_vec());
+        let prev = self.memtable.get(key);
         if prev.is_none() {
+            // the new key triggers the flushing of memtable, but the key itself stays in memtable
             self.memtable_size += key.len() + value.len();
+            if self.memtable_size > self.threshold {
+                // first, pick a name
+                // the work is delegated to fs who knows what files are in the data directory,
+                // underneath, the fs will do a heavy(is it?) load of file operations(mainly file renaming)
+                let file_name = self.fs.allocate_data_file()?;
+                self.migrate_memtable(&file_name)?;
+            }
         }
-        if self.memtable_size > self.threshold {
-            // first, pick a name
-            // the work is delegated to fs who knows what files are in the data directory,
-            // underneath, the fs will do a heavy(is it?) load of file operations(mainly file renaming)
-            let file_name = self.fs.allocate_data_file()?;
-            self.migrate_memtable(&file_name)?;
-        }
+        _ = self.memtable.insert(key.to_vec(), value.to_vec());
         Ok(Response::Record {
             key: key.to_owned(),
             value: value.to_owned(),
