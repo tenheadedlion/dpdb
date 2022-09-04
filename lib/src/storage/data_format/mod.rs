@@ -1,3 +1,5 @@
+use std::mem::size_of;
+
 pub fn encode(key: &[u8], value: &[u8]) -> Vec<u8> {
     let key_meta = key.len().to_be_bytes();
     let value_meta = value.len().to_be_bytes();
@@ -9,4 +11,10 @@ pub struct Record {
     pub vlen: usize,
     pub key: Vec<u8>,
     pub value: Vec<u8>,
+}
+
+impl Record {
+    pub fn size(&self) -> usize {
+        self.klen + self.vlen + size_of::<usize>() * 2
+    }
 }

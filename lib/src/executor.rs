@@ -1,9 +1,9 @@
-use super::{parser, statement::Keyword, storage::Storage};
+use super::{parser, statement::Keyword, storage::Storage, storage::FileSystem};
 use crate::{report::Report, response::Response, Result};
 use std::time::Instant;
 
 pub struct Executor {
-    storage: Storage,
+    storage: Storage<FileSystem>,
 }
 
 impl Executor {
@@ -11,6 +11,10 @@ impl Executor {
         Ok(Executor {
             storage: Storage::new(path, "data")?,
         })
+    }
+    #[cfg(feature = "test")]
+    pub async fn new(storage: Storage) -> Result<Self> {
+        Ok(Executor { storage })
     }
 }
 
